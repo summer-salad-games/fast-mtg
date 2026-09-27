@@ -1,0 +1,886 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        <title>MTG Fast Duel</title>
+        <style>
+            :root {
+                --bg: #141014;
+                --panel: #1e1a1f;
+                --panel2: #262129;
+                --line: #3a3340;
+                --ink: #f1e9e3;
+                --sub: #a99aa8;
+                --gold: #c9a35a;
+                --w: #f2e9c9;
+                --u: #7fb4dd;
+                --b: #8f7fae;
+                --r: #d97a5a;
+                --g: #7fae8a;
+                box-sizing: border-box;
+                padding-top: env(safe-area-inset-top, 0px);
+                padding-bottom: env(safe-area-inset-bottom, 0px);
+            }
+            @media (prefers-color-scheme: light) {
+                :root:not([data-theme="dark"]) {
+                    --bg: #f4efe8;
+                    --panel: #fffdfa;
+                    --panel2: #ece4d8;
+                    --line: #d8ccba;
+                    --ink: #241c1e;
+                    --sub: #6b5d55;
+                    --gold: #8a6a2e;
+                }
+            }
+            :root[data-theme="light"] {
+                --bg: #f4efe8;
+                --panel: #fffdfa;
+                --panel2: #ece4d8;
+                --line: #d8ccba;
+                --ink: #241c1e;
+                --sub: #6b5d55;
+                --gold: #8a6a2e;
+            }
+            html {
+                scroll-padding-top: env(safe-area-inset-top, 0px);
+                height: 100%;
+            }
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                margin: 0;
+                min-height: 100%;
+                background: var(--bg);
+                color: var(--ink);
+                font-family: Georgia, "Iowan Old Style", serif;
+                display: flex;
+                justify-content: center;
+            }
+            #app {
+                width: 100%;
+                max-width: 560px;
+                padding: 18px 16px 40px;
+            }
+            h1 {
+                font-size: 1.5rem;
+                margin: 0.2em 0 0.1em;
+                letter-spacing: 0.02em;
+            }
+            h2 {
+                font-size: 1.1rem;
+                margin: 1.2em 0 0.4em;
+                color: var(--gold);
+                font-weight: 600;
+            }
+            p.sub {
+                color: var(--sub);
+                margin: 0.2em 0 1em;
+                font-size: 0.92rem;
+                line-height: 1.4;
+            }
+            .view {
+                display: none;
+            }
+            .view.active {
+                display: block;
+                animation: fade 0.25s ease;
+            }
+            @keyframes fade {
+                from {
+                    opacity: 0;
+                    transform: translateY(4px);
+                }
+                to {
+                    opacity: 1;
+                }
+            }
+            .card {
+                background: var(--panel);
+                border: 1px solid var(--line);
+                border-radius: 10px;
+                padding: 14px;
+                margin-bottom: 12px;
+            }
+            label {
+                display: block;
+                font-size: 0.85rem;
+                color: var(--sub);
+                margin-bottom: 4px;
+            }
+            input[type="text"],
+            input[type="number"] {
+                width: 100%;
+                padding: 9px 10px;
+                border-radius: 7px;
+                border: 1px solid var(--line);
+                background: var(--panel2);
+                color: var(--ink);
+                font-family: inherit;
+                font-size: 0.95rem;
+            }
+            button {
+                font-family: inherit;
+                border: 1px solid var(--line);
+                background: var(--panel2);
+                color: var(--ink);
+                padding: 10px 14px;
+                border-radius: 8px;
+                font-size: 0.95rem;
+                cursor: pointer;
+            }
+            button.primary {
+                background: var(--gold);
+                color: #241c1e;
+                border-color: var(--gold);
+                font-weight: 600;
+            }
+            button.primary:disabled {
+                opacity: 0.4;
+                cursor: not-allowed;
+            }
+            button.ghost {
+                background: transparent;
+            }
+            button:active {
+                transform: scale(0.97);
+            }
+            .row {
+                display: flex;
+                gap: 8px;
+                flex-wrap: wrap;
+                align-items: center;
+            }
+            .pill {
+                display: inline-block;
+                padding: 3px 10px;
+                border-radius: 999px;
+                font-size: 0.78rem;
+                font-weight: 600;
+                color: #141014;
+            }
+            .pill.W {
+                background: var(--w);
+            }
+            .pill.U {
+                background: var(--u);
+            }
+            .pill.B {
+                background: var(--b);
+                color: #fff;
+            }
+            .pill.R {
+                background: var(--r);
+            }
+            .pill.G {
+                background: var(--g);
+            }
+            .deal {
+                text-align: center;
+                padding: 24px 0;
+            }
+            .playercard {
+                background: var(--panel);
+                border: 1px solid var(--line);
+                border-radius: 10px;
+                padding: 14px;
+                margin-bottom: 14px;
+            }
+            .checklist label.item {
+                display: flex;
+                align-items: flex-start;
+                gap: 8px;
+                font-size: 0.92rem;
+                color: var(--ink);
+                margin: 8px 0;
+                cursor: pointer;
+            }
+            .checklist input[type="checkbox"] {
+                margin-top: 3px;
+                width: 16px;
+                height: 16px;
+            }
+            .score {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 8px 14px;
+                background: var(--panel2);
+                border-radius: 8px;
+                margin-bottom: 14px;
+                font-size: 0.9rem;
+            }
+            .duel {
+                display: grid;
+                gap: 14px;
+            }
+            .hpcard {
+                background: var(--panel);
+                border: 1px solid var(--line);
+                border-radius: 12px;
+                padding: 16px;
+                text-align: center;
+            }
+            .hpcard h3 {
+                margin: 0 0 4px;
+                font-size: 1.05rem;
+            }
+            .hp {
+                font-size: 2.6rem;
+                font-weight: 700;
+                margin: 6px 0;
+            }
+            .hpbtns {
+                display: flex;
+                justify-content: center;
+                gap: 10px;
+                margin-bottom: 6px;
+            }
+            .hpbtns button {
+                width: 46px;
+                height: 46px;
+                font-size: 1.3rem;
+                border-radius: 50%;
+            }
+            .counters {
+                margin-top: 10px;
+                text-align: left;
+            }
+            .counter-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 5px 0;
+                border-top: 1px solid var(--line);
+                font-size: 0.85rem;
+            }
+            .counter-row .cbtns button {
+                width: 28px;
+                height: 28px;
+                padding: 0;
+                font-size: 0.9rem;
+                border-radius: 50%;
+            }
+            .addcounter {
+                display: flex;
+                gap: 6px;
+                margin-top: 8px;
+            }
+            .addcounter input {
+                flex: 1;
+            }
+            #overlay {
+                position: fixed;
+                inset: 0;
+                background: rgba(10, 8, 10, 0.92);
+                color: #f1e9e3;
+                display: none;
+                align-items: center;
+                justify-content: center;
+                flex-direction: column;
+                text-align: center;
+                z-index: 50;
+                padding: 20px;
+            }
+            #overlay.show {
+                display: flex;
+                animation: pop 0.35s ease;
+            }
+            @keyframes pop {
+                from {
+                    opacity: 0;
+                    transform: scale(0.9);
+                }
+                to {
+                    opacity: 1;
+                    transform: scale(1);
+                }
+            }
+            #overlay h2 {
+                color: var(--gold);
+                font-size: 1.8rem;
+                margin: 0 0 0.3em;
+            }
+            #overlay .scoreline {
+                display: flex;
+                gap: 14px;
+                font-size: 0.95rem;
+            }
+            #historyOverlay {
+                position: fixed;
+                inset: 0;
+                background: rgba(10, 8, 10, 0.92);
+                color: #f1e9e3;
+                display: none;
+                align-items: center;
+                justify-content: center;
+                z-index: 50;
+                padding: 20px;
+            }
+            #historyOverlay.show {
+                display: flex;
+                animation: pop 0.3s ease;
+            }
+            #resetOverlay {
+                position: fixed;
+                inset: 0;
+                background: rgba(10, 8, 10, 0.92);
+                color: #f1e9e3;
+                display: none;
+                align-items: center;
+                justify-content: center;
+                z-index: 60;
+                padding: 20px;
+            }
+            #resetOverlay.show {
+                display: flex;
+                animation: pop 0.3s ease;
+            }
+            .history-panel {
+                background: var(--panel);
+                border: 1px solid var(--line);
+                border-radius: 14px;
+                width: 100%;
+                max-width: 400px;
+                max-height: 78vh;
+                display: flex;
+                flex-direction: column;
+                overflow: hidden;
+                box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+            }
+            .history-head {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 14px 16px;
+                border-bottom: 1px solid var(--line);
+                flex-shrink: 0;
+            }
+            .history-head h2 {
+                margin: 0;
+                color: var(--gold);
+                font-size: 1.15rem;
+            }
+            .history-head button {
+                width: 34px;
+                height: 34px;
+                padding: 0;
+                border-radius: 50%;
+                font-size: 1rem;
+                line-height: 1;
+            }
+            .history-body {
+                overflow-y: auto;
+                padding: 12px 16px 16px;
+            }
+            .history-empty {
+                text-align: center;
+                color: var(--sub);
+                padding: 30px 10px;
+                font-size: 0.9rem;
+            }
+            .hist-row {
+                background: var(--panel2);
+                border: 1px solid var(--line);
+                border-radius: 10px;
+                padding: 10px 12px;
+                margin-bottom: 10px;
+            }
+            .hist-row:last-child {
+                margin-bottom: 0;
+            }
+            .hist-top {
+                display: flex;
+                justify-content: space-between;
+                align-items: baseline;
+                margin-bottom: 6px;
+            }
+            .hist-top .rlabel {
+                font-size: 0.72rem;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                color: var(--sub);
+            }
+            .hist-top .win {
+                font-weight: 700;
+                color: var(--gold);
+                font-size: 0.92rem;
+            }
+            .hist-sides {
+                display: flex;
+                justify-content: space-between;
+                gap: 10px;
+                font-size: 0.85rem;
+            }
+            .hist-sides .side {
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+            }
+            .hist-sides .side.winner .pname {
+                color: var(--gold);
+                font-weight: 700;
+            }
+            .hist-sides .pname {
+                font-size: 0.85rem;
+            }
+            .small {
+                font-size: 0.8rem;
+                color: var(--sub);
+            }
+        </style>
+    </head>
+    <body>
+        <div id="app">
+            <div class="row" style="justify-content: space-between; align-items: center; margin-bottom: 10px">
+                <h1>MTG Fast Duel</h1>
+                <div class="row" style="gap: 8px">
+                    <button
+                        class="ghost"
+                        id="btnReset"
+                        style="font-size: 0.8rem; margin: 8px 0 8px 0; padding: 8px 14px"
+                    >
+                        Reset
+                    </button>
+                    <button
+                        class="ghost"
+                        id="btnHistory"
+                        style="font-size: 0.8rem; margin: 8px 0 8px 0; padding: 8px 14px"
+                    >
+                        History
+                    </button>
+                </div>
+            </div>
+
+            <!-- SETUP -->
+            <div class="view" id="view-setup">
+                <p class="sub">Enter names and starting life, then draw colors.</p>
+                <div class="card">
+                    <label>Player 1 name</label>
+                    <input type="text" id="p1name" placeholder="Player 1" />
+                    <label style="margin-top: 8px">Player 2 name</label>
+                    <input type="text" id="p2name" placeholder="Player 2" />
+                    <label style="margin-top: 8px">Starting life</label>
+                    <input type="number" id="startLife" value="20" min="1" />
+                </div>
+                <button class="primary" id="btnToColors">Draw colors →</button>
+            </div>
+
+            <!-- COLORS -->
+            <div class="view" id="view-colors">
+                <div class="score" id="scoreBar"></div>
+                <h2>Color draw</h2>
+                <p class="sub">
+                    One shared 5-color deck (W U B R G) is shuffled. Each player is dealt 2 — no overlap possible.
+                </p>
+                <div class="card deal">
+                    <button class="primary" id="btnDeal">Shuffle &amp; deal</button>
+                    <div id="dealResult" style="margin-top: 16px"></div>
+                </div>
+                <button id="btnToChecklist" style="display: none">Build checklists →</button>
+            </div>
+
+            <!-- CHECKLIST -->
+            <div class="view" id="view-checklist">
+                <div class="score" id="scoreBar2"></div>
+                <h2>Pull your cards</h2>
+                <p class="sub">Check off each pull as you build your deck.</p>
+                <div id="checklists"></div>
+                <button class="primary" id="btnToDuel" disabled>Both decks ready — start the duel →</button>
+            </div>
+
+            <!-- DUEL -->
+            <div class="view" id="view-duel">
+                <div class="score" id="scoreBar3"></div>
+                <div class="duel" id="duelArea"></div>
+            </div>
+
+            <div id="overlay">
+                <h2 id="winText"></h2>
+                <div class="scoreline" id="scoreText"></div>
+                <button class="primary" id="btnNextRound" style="margin-top: 16px">Next round →</button>
+            </div>
+
+            <div id="historyOverlay">
+                <div class="history-panel">
+                    <div class="history-head">
+                        <h2>Match history</h2>
+                        <button id="btnCloseHistory" class="ghost">✕</button>
+                    </div>
+                    <div class="history-body" id="historyBody">
+                        <div id="historyList"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="resetOverlay">
+                <div class="history-panel" style="max-width: 320px">
+                    <div class="history-head">
+                        <h2>Reset everything?</h2>
+                    </div>
+                    <div class="history-body">
+                        <p class="small" style="margin: 0 0 16px">
+                            This clears names, colors, scores, and match history, and starts over from the beginning.
+                        </p>
+                        <div class="row" style="justify-content: flex-end; gap: 8px">
+                            <button id="btnCancelReset" class="ghost">Cancel</button>
+                            <button id="btnConfirmReset" class="primary">Reset</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            const COLORS = ["W", "U", "B", "R", "G"];
+
+            function mkPlayer() {
+                return { name: "", colors: [], checklist: [], life: 20, counters: [] };
+            }
+            function loadState() {
+                try {
+                    const raw = localStorage.getItem("mtgFF_state");
+                    if (raw) return JSON.parse(raw);
+                } catch (e) {}
+                return {
+                    players: [mkPlayer(), mkPlayer()],
+                    startLife: 20,
+                    scores: [0, 0],
+                    round: 1,
+                    view: "setup",
+                    history: [],
+                };
+            }
+            let state = loadState();
+            state.history = state.history || [];
+            function save() {
+                try {
+                    localStorage.setItem("mtgFF_state", JSON.stringify(state));
+                } catch (e) {}
+            }
+
+            function buildChecklistItems(colors) {
+                const items = [];
+                colors.forEach((c) => {
+                    items.push({ label: `${labelColor(c)} — Common ×10`, checked: false });
+                    items.push({ label: `${labelColor(c)} — Uncommon ×5`, checked: false });
+                    items.push({ label: `${labelColor(c)} — Rare/Mythic ×2`, checked: false });
+                });
+                items.push({ label: "Colorless — Common ×2", checked: false });
+                items.push({ label: "Colorless — Uncommon ×1", checked: false });
+                items.push({ label: "Colorless — Rare/Mythic ×1", checked: false });
+                items.push({ label: `Multicolor (${colors.join("/")}) ×2`, checked: false });
+                items.push({ label: "Lands — up to 17", checked: false });
+                return items;
+            }
+            function labelColor(c) {
+                return { W: "White", U: "Blue", B: "Black", R: "Red", G: "Green" }[c];
+            }
+
+            function showView(id) {
+                document.querySelectorAll(".view").forEach((v) => v.classList.remove("active"));
+                document.getElementById(id).classList.add("active");
+                state.view = id.replace("view-", "");
+                save();
+            }
+            function scoreLine() {
+                const [p1, p2] = state.players;
+                return `<span>${p1.name || "Player 1"}: <strong>${state.scores[0]}</strong></span><span>${p2.name || "Player 2"}: <strong>${state.scores[1]}</strong></span>`;
+            }
+            function refreshScoreBars() {
+                ["scoreBar", "scoreBar2", "scoreBar3"].forEach((id) => {
+                    const el = document.getElementById(id);
+                    if (el) el.innerHTML = scoreLine();
+                });
+            }
+
+            document.getElementById("btnToColors").addEventListener("click", () => {
+                state.players[0].name = document.getElementById("p1name").value.trim() || "Player 1";
+                state.players[1].name = document.getElementById("p2name").value.trim() || "Player 2";
+                state.startLife = parseInt(document.getElementById("startLife").value, 10) || 20;
+                save();
+                refreshScoreBars();
+                document.getElementById("dealResult").innerHTML = "";
+                document.getElementById("btnToChecklist").style.display = "none";
+                showView("view-colors");
+            });
+
+            document.getElementById("btnDeal").addEventListener("click", () => {
+                const deck = [...COLORS];
+                for (let i = deck.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [deck[i], deck[j]] = [deck[j], deck[i]];
+                }
+                const p1c = deck.slice(0, 2),
+                    p2c = deck.slice(2, 4);
+                state.players[0].colors = p1c;
+                state.players[1].colors = p2c;
+                save();
+                const pillrow = (arr) => arr.map((c) => `<span class="pill ${c}">${c}</span>`).join(" ");
+                document.getElementById("dealResult").innerHTML = `
+    <p><strong>${state.players[0].name}</strong>: ${pillrow(p1c)}</p>
+    <p><strong>${state.players[1].name}</strong>: ${pillrow(p2c)}</p>`;
+                document.getElementById("btnToChecklist").style.display = "inline-block";
+            });
+
+            document.getElementById("btnToChecklist").addEventListener("click", () => {
+                state.players.forEach((pl) => {
+                    pl.checklist = buildChecklistItems(pl.colors);
+                    pl.life = state.startLife;
+                    pl.counters = [];
+                });
+                save();
+                refreshScoreBars();
+                renderChecklists();
+                showView("view-checklist");
+            });
+
+            function renderChecklists() {
+                const el = document.getElementById("checklists");
+                el.innerHTML = state.players
+                    .map((pl, pidx) => {
+                        const body = pl.checklist
+                            .map(
+                                (it, iidx) =>
+                                    `<label class="item"><input type="checkbox" data-p="${pidx}" data-i="${iidx}" ${it.checked ? "checked" : ""}> ${it.label}</label>`
+                            )
+                            .join("");
+                        return `<div class="playercard"><h2 style="margin-top:0">${pl.name} — ${pl.colors.map((c) => `<span class="pill ${c}">${c}</span>`).join(" ")}</h2>${body}</div>`;
+                    })
+                    .join("");
+                el.querySelectorAll("input[type=checkbox]").forEach((cb) => {
+                    cb.addEventListener("change", (e) => {
+                        const p = +e.target.dataset.p,
+                            i = +e.target.dataset.i;
+                        state.players[p].checklist[i].checked = e.target.checked;
+                        save();
+                        updateStartDuelButton();
+                    });
+                });
+                updateStartDuelButton();
+            }
+            function updateStartDuelButton() {
+                const allChecked = state.players.every((pl) => pl.checklist.every((it) => it.checked));
+                document.getElementById("btnToDuel").disabled = !allChecked;
+            }
+
+            document.getElementById("btnToDuel").addEventListener("click", () => {
+                if (document.getElementById("btnToDuel").disabled) return;
+                refreshScoreBars();
+                renderDuel();
+                showView("view-duel");
+            });
+
+            function renderDuel() {
+                const el = document.getElementById("duelArea");
+                el.innerHTML = state.players
+                    .map(
+                        (pl, pidx) => `
+    <div class="hpcard">
+      <h3>${pl.name}</h3>
+      <div class="hp" id="hp-${pidx}">${pl.life}</div>
+      <div class="hpbtns">
+        <button data-hp="${pidx}" data-d="-1">−</button>
+        <button data-hp="${pidx}" data-d="1">+</button>
+      </div>
+      <div class="counters" id="counters-${pidx}"></div>
+      <div class="addcounter">
+        <input type="text" id="newcounter-${pidx}" placeholder="Add counter (e.g. Poison)">
+        <button data-addc="${pidx}">Add</button>
+      </div>
+    </div>`
+                    )
+                    .join("");
+                state.players.forEach((pl, pidx) => renderCounters(pidx));
+                el.querySelectorAll("[data-hp]").forEach((b) =>
+                    b.addEventListener("click", () => {
+                        const p = +b.dataset.hp,
+                            d = +b.dataset.d;
+                        state.players[p].life += d;
+                        save();
+                        document.getElementById("hp-" + p).textContent = state.players[p].life;
+                        if (state.players[p].life <= 0) declareWinner(1 - p);
+                    })
+                );
+                el.querySelectorAll("[data-addc]").forEach((b) =>
+                    b.addEventListener("click", () => {
+                        const p = +b.dataset.addc,
+                            inp = document.getElementById("newcounter-" + p);
+                        const label = inp.value.trim();
+                        if (!label) return;
+                        state.players[p].counters.push({ label, val: 0 });
+                        inp.value = "";
+                        save();
+                        renderCounters(p);
+                    })
+                );
+            }
+            function renderCounters(pidx) {
+                const pl = state.players[pidx];
+                const el = document.getElementById("counters-" + pidx);
+                el.innerHTML = pl.counters
+                    .map(
+                        (c, ci) => `
+    <div class="counter-row"><span>${c.label}: <strong>${c.val}</strong></span>
+      <span class="cbtns row">
+        <button data-cc="${pidx}" data-ci="${ci}" data-cd="-1">−</button>
+        <button data-cc="${pidx}" data-ci="${ci}" data-cd="1">+</button>
+        <button data-crm="${pidx}" data-ci="${ci}" class="ghost">✕</button>
+      </span></div>`
+                    )
+                    .join("");
+                el.querySelectorAll("[data-cc]").forEach((b) =>
+                    b.addEventListener("click", () => {
+                        const p = +b.dataset.cc,
+                            ci = +b.dataset.ci,
+                            d = +b.dataset.cd;
+                        pl.counters[ci].val = Math.max(0, pl.counters[ci].val + d);
+                        save();
+                        renderCounters(pidx);
+                    })
+                );
+                el.querySelectorAll("[data-crm]").forEach((b) =>
+                    b.addEventListener("click", () => {
+                        const ci = +b.dataset.ci;
+                        pl.counters.splice(ci, 1);
+                        save();
+                        renderCounters(pidx);
+                    })
+                );
+            }
+
+            function vibrate(pattern) {
+                try {
+                    if (navigator.vibrate) navigator.vibrate(pattern);
+                } catch (e) {}
+            }
+            function playWinSound() {
+                try {
+                    const Ctx = window.AudioContext || window.webkitAudioContext;
+                    const ctx = new Ctx();
+                    [0, 0.14].forEach((t, i) => {
+                        const osc = ctx.createOscillator(),
+                            gain = ctx.createGain();
+                        osc.type = "triangle";
+                        osc.frequency.value = i === 0 ? 523.25 : 783.99;
+                        gain.gain.setValueAtTime(0.001, ctx.currentTime + t);
+                        gain.gain.exponentialRampToValueAtTime(0.25, ctx.currentTime + t + 0.02);
+                        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + t + 0.3);
+                        osc.connect(gain).connect(ctx.destination);
+                        osc.start(ctx.currentTime + t);
+                        osc.stop(ctx.currentTime + t + 0.32);
+                    });
+                } catch (e) {}
+            }
+            function declareWinner(winIdx) {
+                state.scores[winIdx]++;
+                state.history.push({
+                    round: state.round,
+                    winner: state.players[winIdx].name,
+                    p1: { name: state.players[0].name, colors: [...state.players[0].colors] },
+                    p2: { name: state.players[1].name, colors: [...state.players[1].colors] },
+                });
+                save();
+                vibrate([120, 60, 120]);
+                playWinSound();
+                document.getElementById("winText").textContent = `🏆 ${state.players[winIdx].name} wins!`;
+                document.getElementById("scoreText").innerHTML = scoreLine();
+                document.getElementById("overlay").classList.add("show");
+            }
+            document.getElementById("btnNextRound").addEventListener("click", () => {
+                document.getElementById("overlay").classList.remove("show");
+                state.round++;
+                save();
+                document.getElementById("dealResult").innerHTML = "";
+                document.getElementById("btnToChecklist").style.display = "none";
+                refreshScoreBars();
+                showView("view-colors");
+            });
+
+            // ---------- init ----------
+            function renderHistory() {
+                const el = document.getElementById("historyList");
+                if (state.history.length === 0) {
+                    el.innerHTML =
+                        '<div class="history-empty">🕯️ No rounds played yet — winners will show up here.</div>';
+                    return;
+                }
+                const pillrow = (arr) => (arr || []).map((c) => `<span class="pill ${c}">${c}</span>`).join(" ");
+                el.innerHTML = [...state.history]
+                    .reverse()
+                    .map((h) => {
+                        const p1win = h.winner === (h.p1 && h.p1.name),
+                            p2win = h.winner === (h.p2 && h.p2.name);
+                        return `
+    <div class="hist-row">
+      <div class="hist-top">
+        <span class="rlabel">Round ${h.round}</span>
+        <span class="win">🏆 ${h.winner}</span>
+      </div>
+      <div class="hist-sides">
+        <div class="side ${p1win ? "winner" : ""}">
+          <span class="pname">${h.p1 ? h.p1.name : ""}</span>
+          <span>${pillrow(h.p1 && h.p1.colors)}</span>
+        </div>
+        <div class="side ${p2win ? "winner" : ""}" style="text-align:right; align-items:flex-end;">
+          <span class="pname">${h.p2 ? h.p2.name : ""}</span>
+          <span>${pillrow(h.p2 && h.p2.colors)}</span>
+        </div>
+      </div>
+    </div>`;
+                    })
+                    .join("");
+            }
+            document.getElementById("btnHistory").addEventListener("click", () => {
+                renderHistory();
+                document.getElementById("historyOverlay").classList.add("show");
+            });
+            document.getElementById("btnCloseHistory").addEventListener("click", () => {
+                document.getElementById("historyOverlay").classList.remove("show");
+            });
+            document.getElementById("btnReset").addEventListener("click", () => {
+                document.getElementById("resetOverlay").classList.add("show");
+            });
+            document.getElementById("btnCancelReset").addEventListener("click", () => {
+                document.getElementById("resetOverlay").classList.remove("show");
+            });
+            document.getElementById("btnConfirmReset").addEventListener("click", () => {
+                try {
+                    localStorage.removeItem("mtgFF_state");
+                } catch (e) {}
+                state = {
+                    players: [mkPlayer(), mkPlayer()],
+                    startLife: 20,
+                    scores: [0, 0],
+                    round: 1,
+                    view: "setup",
+                    history: [],
+                };
+                save();
+                document.getElementById("p1name").value = "";
+                document.getElementById("p2name").value = "";
+                document.getElementById("startLife").value = 20;
+                document.getElementById("dealResult").innerHTML = "";
+                document.getElementById("btnToChecklist").style.display = "none";
+                document.getElementById("overlay").classList.remove("show");
+                document.getElementById("historyOverlay").classList.remove("show");
+                document.getElementById("resetOverlay").classList.remove("show");
+                refreshScoreBars();
+                showView("view-setup");
+            });
+
+            document.getElementById("p1name").value = state.players[0].name || "";
+            document.getElementById("p2name").value = state.players[1].name || "";
+            document.getElementById("startLife").value = state.startLife || 20;
+            refreshScoreBars();
+            if (state.view && state.view !== "setup" && document.getElementById("view-" + state.view)) {
+                if (state.view === "checklist") renderChecklists();
+                if (state.view === "duel") renderDuel();
+                showView("view-" + state.view);
+            } else {
+                showView("view-setup");
+            }
+        </script>
+    </body>
+</html>
