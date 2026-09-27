@@ -45,7 +45,3 @@ Open the app, no installation required:
 - Single self-contained `.html` file — HTML, CSS, and vanilla JavaScript, no build step, no dependencies.
 - State is kept in a single JS object and persisted to `localStorage` (per-device, never uploaded anywhere).
 - Sound is generated on the fly with the Web Audio API; vibration uses the standard `navigator.vibrate` API where the device supports it.
-## Notes / possible next steps
- 
-- No card names are stored — the checklist shows category counts (e.g. "White — Common ×10"), since the pool is physical and unique to each player's collection.
-- Ideas for later: best-of-3 match structure, sideboard swaps between rounds, a turn counter, or an undo for accidental life taps.
